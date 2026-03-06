@@ -1,0 +1,150 @@
+version: "1.0.0"
+generated_at: "2026-03-06T00:00:00Z"
+source: "docs/requirements/design-requirements.md"
+
+aesthetic:
+  direction: minimal-industrial
+  mood: intellectual-clean
+  concept: "蒸留所のような洗練された空間 - 不要なものを取り除き本質だけを残す"
+  differentiation: "ダーク基調 + 銅色アクセント。蒸留器の機能美を表現したインダストリアルUI"
+
+colors:
+  primary: "#c2824a"
+  primary_hover: "#d4956a"
+  primary_muted: "#c2824a20"
+  background:
+    dark: "#0a0a0b"
+    light: "#fafaf9"
+  surface:
+    dark: "#161618"
+    light: "#f5f5f4"
+  surface_elevated:
+    dark: "#1e1e20"
+    light: "#eeeeec"
+  text:
+    primary:
+      dark: "#e8e8e6"
+      light: "#1a1a1a"
+    secondary:
+      dark: "#8a8a88"
+      light: "#6a6a68"
+    muted:
+      dark: "#5a5a58"
+      light: "#9a9a98"
+  border:
+    dark: "#2a2a2c"
+    light: "#e2e2e0"
+  success: "#4a9d6e"
+  error: "#c44a4a"
+  warning: "#c2964a"
+  info: "#4a82c2"
+
+typography:
+  heading:
+    family: "Instrument Serif"
+    fallback: "Georgia, serif"
+    weights: [400]
+    sizes:
+      h1: "2.5rem"
+      h2: "1.75rem"
+      h3: "1.25rem"
+  body:
+    family: "Geist"
+    fallback: "system-ui, sans-serif"
+    weights: [400, 500, 600]
+    sizes:
+      regular: "1rem"
+      large: "1.125rem"
+      small: "0.875rem"
+  mono:
+    family: "Geist Mono"
+    fallback: "monospace"
+    weights: [400]
+    sizes:
+      regular: "0.9rem"
+      small: "0.8rem"
+
+spacing:
+  unit: "4px"
+  scale:
+    xs: "4px"
+    sm: "8px"
+    md: "16px"
+    lg: "24px"
+    xl: "32px"
+    2xl: "48px"
+    3xl: "64px"
+    4xl: "96px"
+
+borders:
+  radius:
+    none: "0"
+    sm: "4px"
+    md: "6px"
+    lg: "8px"
+    xl: "12px"
+    full: "9999px"
+  width:
+    thin: "1px"
+    medium: "2px"
+
+shadows:
+  sm: "0 1px 2px rgba(0, 0, 0, 0.3)"
+  md: "0 2px 8px rgba(0, 0, 0, 0.4)"
+  lg: "0 4px 16px rgba(0, 0, 0, 0.5)"
+  glow: "0 0 20px rgba(194, 130, 74, 0.15)"
+
+components:
+  library: "shadcn/ui"
+  styling: "tailwind"
+  animation: "motion/react"
+  icons: "lucide-react"
+  utility: "cn (clsx + tailwind-merge)"
+
+animations:
+  duration:
+    fast: "100ms"
+    normal: "150ms"
+    slow: "200ms"
+  easing: "ease-out"
+  allowed_properties:
+    - transform
+    - opacity
+  transitions:
+    tab_switch: "fade 150ms ease-out"
+    progress_bar: "width 300ms ease-out"
+    hover: "opacity 100ms ease-out"
+    stagger_in: "translateY(8px) + opacity, 150ms, 50ms stagger"
+
+responsive:
+  mobile_first: false
+  primary_target: desktop
+  breakpoints:
+    sm: "640px"
+    md: "768px"
+    lg: "1024px"
+    xl: "1280px"
+  max_width: "1200px"
+  container_padding:
+    mobile: "16px"
+    tablet: "24px"
+    desktop: "32px"
+
+dark_mode:
+  default: true
+  toggle: true
+  system_detect: true
+
+quality:
+  lighthouse:
+    performance: 90
+    accessibility: 100
+    best_practices: 100
+    seo: 100
+  core_web_vitals:
+    fcp: "1.8s"
+    lcp: "2.5s"
+    cls: "0.1"
+  wcag_level: "AA"
+  contrast_ratio: "4.5:1"
+  touch_target: "44px"

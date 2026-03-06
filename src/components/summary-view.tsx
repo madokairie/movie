@@ -15,9 +15,9 @@ import type { Summary } from "@/types";
 type SummaryMode = "oneliner" | "detailed" | "chapters";
 
 const MODE_LABELS: Record<SummaryMode, string> = {
-  oneliner: "3行サマリー",
-  detailed: "詳細要約",
-  chapters: "章立て要約",
+  oneliner: "核心ノウハウ",
+  detailed: "詳細ノウハウ",
+  chapters: "章別テクニック",
 };
 
 interface SummaryViewProps {

@@ -1,11 +1,9 @@
+@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
 @import "tailwindcss";
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
 @custom-variant dark (&:is(.dark *));
-
-/* Instrument Serif from Google Fonts */
-@import url("https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&display=swap");
 
 @theme inline {
   --color-background: var(--background);
@@ -113,9 +111,9 @@
 .dark {
   --background: #0a0a0b;
   --foreground: #e8e8e6;
-  --surface: #161618;
-  --surface-elevated: #1e1e20;
-  --card: #161618;
+  --surface: #1a1a1c;
+  --surface-elevated: #222224;
+  --card: #1a1a1c;
   --card-foreground: #e8e8e6;
   --popover: #161618;
   --popover-foreground: #e8e8e6;
@@ -128,14 +126,14 @@
   --accent: #1e1e20;
   --accent-foreground: #e8e8e6;
   --destructive: #c44a4a;
-  --border: #2a2a2c;
-  --input: #2a2a2c;
+  --border: #3a3a3c;
+  --input: #3a3a3c;
   --ring: #c2824a;
   --copper: #c2824a;
   --copper-hover: #d4956a;
-  --copper-muted: #c2824a20;
-  --text-secondary: #8a8a88;
-  --text-muted: #5a5a58;
+  --copper-muted: #c2824a30;
+  --text-secondary: #a0a09e;
+  --text-muted: #7a7a78;
   --chart-1: #c2824a;
   --chart-2: #4a9d6e;
   --chart-3: #4a82c2;
@@ -320,4 +318,14 @@
 
 .print-only {
   display: none;
+}
+
+/* Shimmer animation for progress bar */
+@keyframes shimmer {
+  0% { transform: translateX(-100%); }
+  100% { transform: translateX(100%); }
+}
+
+.animate-shimmer {
+  animation: shimmer 2s infinite ease-in-out;
 }

@@ -11,9 +11,10 @@ import type { DistillResult, ActiveTab } from "@/types";
 
 interface ResultTabsProps {
   result: DistillResult;
+  url?: string;
 }
 
-export function ResultTabs({ result }: ResultTabsProps) {
+export function ResultTabs({ result, url }: ResultTabsProps) {
   return (
     <Tabs defaultValue="transcript" className="w-full">
       <div className="flex items-center justify-between gap-4">
@@ -52,7 +53,7 @@ export function ResultTabs({ result }: ResultTabsProps) {
           </TabsTrigger>
         </TabsList>
 
-        <PdfButton result={result} />
+        <PdfButton result={result} url={url} />
       </div>
 
       <div className="mt-4 rounded-lg border border-border bg-surface p-6">

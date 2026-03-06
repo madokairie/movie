@@ -1,22 +1,30 @@
 "use client";
 
 import { useState, useCallback } from "react";
-import { AlertCircle } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { AlertCircle, ArrowLeft } from "lucide-react";
 import { UrlInput } from "@/components/url-input";
 import { ProgressBar } from "@/components/progress-bar";
 import { VideoMeta } from "@/components/video-meta";
 import { ResultTabs } from "@/components/result-tabs";
+import { HistoryList } from "@/components/history-list";
 import type {
   AppState,
   DistillResult,
-  ProgressEvent,
   ProcessStep,
 } from "@/types";
+
+type ProcessingState = {
+  status: "processing";
+  step: ProcessStep;
+  progress: number;
+  elapsed?: number;
+  estimate?: string;
+};
 
 export default function Home() {
   const [url, setUrl] = useState("");
   const [state, setState] = useState<AppState>({ status: "idle" });
+  const [processingExtra, setProcessingExtra] = useState<{ elapsed?: number; estimate?: string }>({});
 
   const handleDistill = useCallback(async () => {
     setState({ status: "processing", step: "extracting", progress: 0 });
@@ -65,6 +73,10 @@ export default function Home() {
                 step: event.step as ProcessStep,
                 progress: event.progress,
               });
+              setProcessingExtra({
+                elapsed: event.elapsed as number | undefined,
+                estimate: event.estimate as string | undefined,
+              });
             } else if (event.type === "complete") {
               setState({ status: "complete", result: event.data as DistillResult });
             } else if (event.type === "error") {
@@ -86,6 +98,17 @@ export default function Home() {
     }
   }, [url]);
 
+  const handleLoadFromHistory = useCallback((result: DistillResult) => {
+    setState({ status: "complete", result });
+    setUrl("");
+  }, []);
+
+  const handleReset = useCallback(() => {
+    setState({ status: "idle" });
+    setUrl("");
+    setProcessingExtra({});
+  }, []);
+
   const isProcessing = state.status === "processing";
 
   return (
@@ -96,7 +119,6 @@ export default function Home() {
           <h1 className="font-serif text-2xl tracking-tight text-foreground">
             Distill
           </h1>
-          <ThemeToggle />
         </div>
       </header>
 
@@ -115,7 +137,12 @@ export default function Home() {
         {/* Processing */}
         {state.status === "processing" && (
           <section aria-label="処理中">
-            <ProgressBar step={state.step} progress={state.progress} />
+            <ProgressBar
+              step={state.step}
+              progress={state.progress}
+              elapsed={processingExtra.elapsed}
+              estimate={processingExtra.estimate}
+            />
           </section>
         )}
 
@@ -133,26 +160,28 @@ export default function Home() {
         {/* Results */}
         {state.status === "complete" && (
           <div className="space-y-6">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="no-print inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-sm text-text-secondary transition-colors duration-150 hover:bg-surface hover:text-foreground"
+            >
+              <ArrowLeft className="size-4" />
+              新しく分析
+            </button>
+
             <section aria-label="動画情報">
               <VideoMeta meta={state.result.meta} />
             </section>
 
             <section aria-label="結果">
-              <ResultTabs result={state.result} />
+              <ResultTabs result={state.result} url={url} />
             </section>
           </div>
         )}
 
-        {/* Idle state */}
+        {/* Idle state — show history or tagline */}
         {state.status === "idle" && (
-          <div className="flex flex-col items-center justify-center py-24 text-center">
-            <p className="font-serif text-xl text-text-secondary">
-              動画を蒸留して、本質を抽出する
-            </p>
-            <p className="mt-2 text-sm text-text-muted">
-              YouTube・Loom・UTAGEのURLを貼り付けてください
-            </p>
-          </div>
+          <HistoryList onSelectResult={handleLoadFromHistory} />
         )}
       </main>
     </div>

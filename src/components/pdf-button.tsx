@@ -1,22 +1,107 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Loader2 } from "lucide-react";
+import { Download, Loader2, FileText, FileDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import type { DistillResult } from "@/types";
 
 interface PdfButtonProps {
   result: DistillResult;
+  url?: string;
 }
 
-export function PdfButton({ result }: PdfButtonProps) {
+// ---------------------------------------------------------------------------
+// Text export builder
+// ---------------------------------------------------------------------------
+
+function buildTextContent(result: DistillResult, url?: string): string {
+  const date = new Date().toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit",
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+
+  const chapters =
+    result.summary.chapters.length > 0
+      ? result.summary.chapters
+          .map(
+            (c, i) =>
+              `  ${i + 1}. ${c.title}${c.timestamp ? ` (${c.timestamp})` : ""}\n     ${c.summary}`,
+          )
+          .join("\n\n")
+      : "  (なし)";
+
+  const twitterPosts = result.sns.twitter
+    .map((t, i) => `  [${i + 1}] ${t}`)
+    .join("\n\n");
+
+  return `=== Distill ナレッジノート ===
+動画: ${result.meta.title}
+${url ? `URL: ${url}\n` : ""}チャンネル: ${result.meta.channel}
+再生時間: ${result.meta.duration}
+日時: ${date}
+========================
+
+■ 核心ノウハウ
+${result.summary.oneliner}
+
+■ 詳細ノウハウ
+${result.summary.detailed}
+
+■ 章別テクニック
+${chapters}
+
+■ 全文文字起こし
+${result.transcript}
+
+■ ブログ記事
+${result.blog.title}
+
+${result.blog.content}
+
+■ X投稿案
+${twitterPosts}
+
+■ Instagram
+${result.sns.instagram}
+
+■ LinkedIn
+${result.sns.linkedin}
+`;
+}
+
+// ---------------------------------------------------------------------------
+// Component
+// ---------------------------------------------------------------------------
+
+export function PdfButton({ result, url }: PdfButtonProps) {
   const [loading, setLoading] = useState(false);
+
+  const handleTextExport = () => {
+    const text = buildTextContent(result, url);
+    const blob = new Blob([text], { type: "text/plain;charset=utf-8" });
+    const anchor = document.createElement("a");
+    anchor.href = URL.createObjectURL(blob);
+    const safeTitle = result.meta.title.replace(/[/\\?%*:|"<>]/g, "_").slice(0, 60);
+    anchor.download = `${safeTitle}_ナレッジノート.txt`;
+    document.body.appendChild(anchor);
+    anchor.click();
+    document.body.removeChild(anchor);
+    URL.revokeObjectURL(anchor.href);
+  };
 
   const handlePdf = async () => {
     setLoading(true);
 
     try {
-      // Build a printable document
       const printWindow = window.open("", "_blank");
       if (!printWindow) {
         alert("ポップアップがブロックされました。許可してください。");
@@ -59,12 +144,12 @@ export function PdfButton({ result }: PdfButtonProps) {
           <p class="meta">${result.meta.channel} | ${result.meta.duration} | ${result.meta.platform.toUpperCase()}</p>
 
           <div class="section">
-            <h2>要約</h2>
+            <h2>核心ノウハウ</h2>
             <p>${result.summary.oneliner}</p>
           </div>
 
           <div class="section">
-            <h2>詳細要約</h2>
+            <h2>詳細ノウハウ</h2>
             <p>${result.summary.detailed.replace(/\n/g, "<br />")}</p>
           </div>
 
@@ -72,7 +157,7 @@ export function PdfButton({ result }: PdfButtonProps) {
             result.summary.chapters.length > 0
               ? `
           <div class="section">
-            <h2>章立て要約</h2>
+            <h2>章別テクニック</h2>
             ${result.summary.chapters
               .map(
                 (c, i) => `
@@ -117,25 +202,38 @@ export function PdfButton({ result }: PdfButtonProps) {
   };
 
   return (
-    <Button
-      variant="ghost"
-      size="sm"
-      onClick={handlePdf}
-      disabled={loading}
-      aria-label={loading ? "PDF生成中" : "PDFをダウンロード"}
-      className="gap-1.5 text-xs text-text-secondary hover:text-foreground"
-    >
-      {loading ? (
-        <>
-          <Loader2 className="size-3.5 animate-spin" />
-          PDF生成中...
-        </>
-      ) : (
-        <>
-          <Download className="size-3.5" />
-          PDF
-        </>
-      )}
-    </Button>
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button
+          variant="ghost"
+          size="sm"
+          disabled={loading}
+          aria-label="エクスポート"
+          className="gap-1.5 text-xs text-text-secondary hover:text-foreground"
+        >
+          {loading ? (
+            <>
+              <Loader2 className="size-3.5 animate-spin" />
+              処理中...
+            </>
+          ) : (
+            <>
+              <Download className="size-3.5" />
+              保存
+            </>
+          )}
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent align="end" className="min-w-[160px]">
+        <DropdownMenuItem onClick={handleTextExport}>
+          <FileText className="size-4" />
+          テキストで保存
+        </DropdownMenuItem>
+        <DropdownMenuItem onClick={handlePdf}>
+          <FileDown className="size-4" />
+          PDFで保存
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
   );
 }

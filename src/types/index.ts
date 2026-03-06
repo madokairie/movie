@@ -112,6 +112,16 @@ export type DistillErrorCode =
   | "RATE_LIMIT"
   | "AUDIO_TOO_LONG";
 
+/** 履歴エントリ（一覧表示用） */
+export interface HistoryEntry {
+  id: string;
+  url: string;
+  title: string;
+  platform: string;
+  duration: string;
+  createdAt: string;
+}
+
 export class DistillError extends Error {
   constructor(
     public readonly code: DistillErrorCode,

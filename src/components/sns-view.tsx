@@ -104,7 +104,7 @@ export function SnsView({ sns }: SnsViewProps) {
                     {tweet}
                   </p>
                   <span className="mt-2 inline-block text-xs tabular-nums text-text-muted">
-                    {tweet.length}/280
+                    {tweet.length}字
                   </span>
                 </div>
                 <CopyButton text={tweet} label={`ツイート${i + 1}`} />

@@ -32,7 +32,7 @@ export function UrlInput({
         placeholder="YouTube・Loom・UTAGEのURLを貼り付け..."
         disabled={isProcessing}
         aria-label="動画URL"
-        className="h-12 flex-1 rounded-md border-border bg-surface text-foreground placeholder:text-text-muted focus-visible:ring-2 focus-visible:ring-copper text-sm"
+        className="h-12 flex-1 rounded-md border-2 border-border bg-surface text-foreground placeholder:text-text-secondary focus-visible:ring-2 focus-visible:ring-copper text-sm"
       />
       <Button
         type="submit"

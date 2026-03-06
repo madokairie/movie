@@ -2,23 +2,25 @@ import { NextRequest } from "next/server";
 import { extractAudio, cleanup } from "@/lib/extractor";
 import { transcribe } from "@/lib/transcriber";
 import { generateContent } from "@/lib/generator";
-import type { DistillRequest, DistillResult, ProgressEvent, ErrorEvent } from "@/types";
+import { saveResult } from "@/lib/storage";
+import type { DistillRequest, DistillResult } from "@/types";
 import { DistillError } from "@/types";
 
 // ---------------------------------------------------------------------------
-// SSE ヘルパー
+// SSE helper
 // ---------------------------------------------------------------------------
 
-function sseEncode(event: string, data: unknown): string {
-  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+function sseEncode(data: unknown): string {
+  return `data: ${JSON.stringify(data)}\n\n`;
 }
 
 // ---------------------------------------------------------------------------
 // POST /api/distill
 // ---------------------------------------------------------------------------
 
+export const maxDuration = 600; // 10 minutes
+
 export async function POST(request: NextRequest) {
-  // リクエストバリデーション
   let body: DistillRequest;
   try {
     body = (await request.json()) as DistillRequest;
@@ -38,70 +40,82 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // SSE ストリーム
   const stream = new ReadableStream({
     async start(controller) {
       const encoder = new TextEncoder();
       let audioPath: string | null = null;
+      const startTime = Date.now();
 
-      function sendProgress(event: ProgressEvent) {
-        controller.enqueue(encoder.encode(sseEncode("progress", event)));
+      function send(data: Record<string, unknown>) {
+        const elapsed = Math.round((Date.now() - startTime) / 1000);
+        controller.enqueue(
+          encoder.encode(sseEncode({ ...data, elapsed })),
+        );
       }
 
-      function sendError(err: ErrorEvent) {
-        controller.enqueue(encoder.encode(sseEncode("error", err)));
+      function sendError(code: string, message: string) {
+        send({ type: "error", code, message });
         controller.close();
       }
 
       try {
-        // Step 1: 音声抽出
-        sendProgress({
+        // Step 1: Audio extraction
+        send({
+          type: "progress",
           step: "extracting",
-          progress: 10,
+          progress: 5,
           message: "音声を抽出中...",
+          estimate: "動画の長さに応じて1〜10分",
         });
 
         const extraction = await extractAudio(url);
         audioPath = extraction.audioPath;
         const { meta } = extraction;
 
-        sendProgress({
+        send({
+          type: "progress",
           step: "extracting",
           progress: 30,
           message: "音声の抽出が完了しました",
         });
 
-        // Step 2: 文字起こし
-        sendProgress({
+        // Step 2: Transcription
+        send({
+          type: "progress",
           step: "transcribing",
-          progress: 40,
+          progress: 35,
           message: "文字起こし中...",
+          estimate: "長い動画は分割処理するため数分かかります",
         });
 
         const transcript = await transcribe(audioPath);
 
-        sendProgress({
+        send({
+          type: "progress",
           step: "transcribing",
-          progress: 65,
+          progress: 70,
           message: "文字起こしが完了しました",
         });
 
-        // Step 3: コンテンツ生成
-        sendProgress({
+        // Step 3: Content generation
+        send({
+          type: "progress",
           step: "generating",
-          progress: 70,
+          progress: 75,
           message: "コンテンツを生成中...",
+          estimate: "約30秒",
         });
 
         const generated = await generateContent(transcript, meta);
 
-        sendProgress({
+        send({
+          type: "progress",
           step: "generating",
           progress: 95,
           message: "コンテンツ生成が完了しました",
         });
 
-        // 完了
+        // Complete
         const result: DistillResult = {
           meta,
           transcript,
@@ -110,20 +124,24 @@ export async function POST(request: NextRequest) {
           sns: generated.sns,
         };
 
-        controller.enqueue(encoder.encode(sseEncode("complete", result)));
+        // Persist to local history
+        try {
+          await saveResult(url, result);
+        } catch {
+          // Storage failure should not block the response
+        }
+
+        send({ type: "complete", data: result });
         controller.close();
       } catch (error) {
         if (error instanceof DistillError) {
-          sendError({ code: error.code, message: error.message });
+          sendError(error.code, error.message);
         } else {
           const message =
-            error instanceof Error
-              ? error.message
-              : "不明なエラーが発生しました";
-          sendError({ code: "EXTRACTION_FAILED", message });
+            error instanceof Error ? error.message : "不明なエラーが発生しました";
+          sendError("EXTRACTION_FAILED", message);
         }
       } finally {
-        // 一時ファイルのクリーンアップ
         if (audioPath) {
           await cleanup(audioPath);
         }

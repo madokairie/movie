@@ -1,0 +1,69 @@
+# Distill - CCAGI SDK Configuration
+# Generated: 2026-03-06
+
+project:
+  name: distill
+  description: "動画文字起こし＆分析Webアプリ - 動画を蒸留して本質を抽出する"
+  repository: "https://github.com/madokairie/movie"
+  language: ja
+
+tech_stack:
+  framework: "next.js"
+  version: "15"
+  language: "typescript"
+  runtime: "node"
+  runtime_version: "20"
+  ui:
+    library: "shadcn/ui"
+    styling: "tailwindcss"
+    animation: "motion/react"
+    icons: "lucide-react"
+  ai:
+    provider: "anthropic"
+    model: "claude-sonnet-4-20250514"
+    usage:
+      - transcription
+      - summarization
+      - content-conversion
+  tools:
+    - yt-dlp
+    - ffmpeg
+
+domain:
+  dev_subdomain: "distill-dev.aidreams-factory.com"
+  prod_subdomain: "distill.aidreams-factory.com"
+
+cc_auth:
+  dev:
+    account_id: "805673386383"
+    user_pool_id: "ap-northeast-1_lSPtvbFS7"
+    client_id: "5nm9g294deq3r8dl8qkq33eohp"
+    callback_urls:
+      - "http://localhost:3000/"
+      - "http://localhost:3000/auth/callback"
+      - "https://distill-dev.aidreams-factory.com/"
+      - "https://distill-dev.aidreams-factory.com/auth/callback"
+    logout_urls:
+      - "http://localhost:3000/"
+      - "http://localhost:3000/login"
+      - "https://distill-dev.aidreams-factory.com/"
+      - "https://distill-dev.aidreams-factory.com/login"
+  prod:
+    account_id: "661103479219"
+    user_pool_id: "ap-northeast-1_z76s7mTve"
+    client_id: "6qpglrhtneplr9jvfcq4jpnr7r"
+    callback_urls:
+      - "https://distill.aidreams-factory.com/"
+      - "https://distill.aidreams-factory.com/auth/callback"
+    logout_urls:
+      - "https://distill.aidreams-factory.com/"
+      - "https://distill.aidreams-factory.com/login"
+
+coordinator_agent:
+  max_parallel_tasks: 3
+
+commands:
+  generate-requirements:
+    output_dir: docs/requirements
+    analysis_depth: thorough
+    language: ja

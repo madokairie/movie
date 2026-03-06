@@ -1,0 +1,257 @@
+import { NextRequest, NextResponse } from "next/server";
+import type { PdfRequest } from "@/types";
+
+// ---------------------------------------------------------------------------
+// POST /api/pdf
+// ---------------------------------------------------------------------------
+
+/**
+ * PDF 生成エンドポイント。
+ *
+ * 日本語フォントの複雑さを考慮し、サーバーサイドでは PDF を生成せず、
+ * クライアントサイドでの PDF 生成に必要な構造化データを返す。
+ *
+ * クライアント側で window.print() や html2canvas + jsPDF 等を使用して
+ * PDF を生成する想定。
+ */
+export async function POST(request: NextRequest) {
+  let body: PdfRequest;
+
+  try {
+    body = (await request.json()) as PdfRequest;
+  } catch {
+    return NextResponse.json(
+      { error: "不正なリクエストです" },
+      { status: 400 },
+    );
+  }
+
+  // 必須フィールドのバリデーション
+  if (!body.meta || !body.transcript || !body.summary || !body.blog || !body.sns) {
+    return NextResponse.json(
+      { error: "必須フィールドが不足しています" },
+      { status: 400 },
+    );
+  }
+
+  // PDF 用に構造化した HTML を返す
+  const html = buildPdfHtml(body);
+
+  return new NextResponse(html, {
+    headers: {
+      "Content-Type": "text/html; charset=utf-8",
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// PDF 用 HTML 生成
+// ---------------------------------------------------------------------------
+
+function buildPdfHtml(data: PdfRequest): string {
+  const { meta, transcript, summary, blog, sns } = data;
+  const now = new Date().toLocaleDateString("ja-JP", {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+
+  const chaptersHtml = summary.chapters
+    .map(
+      (ch, i) => `
+      <div class="chapter">
+        <h4>${i + 1}. ${escapeHtml(ch.title)} <span class="timestamp">${escapeHtml(ch.timestamp)}</span></h4>
+        <p>${escapeHtml(ch.summary)}</p>
+      </div>`,
+    )
+    .join("");
+
+  const twitterHtml = sns.twitter
+    .map((t) => `<li>${escapeHtml(t)}</li>`)
+    .join("");
+
+  return `<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <title>Distill Report - ${escapeHtml(meta.title)}</title>
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap');
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: 'Noto Sans JP', sans-serif;
+      color: #1a1a1a;
+      line-height: 1.8;
+      padding: 40px;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    header {
+      border-bottom: 2px solid #1a1a1a;
+      padding-bottom: 20px;
+      margin-bottom: 32px;
+    }
+
+    header h1 {
+      font-size: 14px;
+      letter-spacing: 4px;
+      text-transform: uppercase;
+      color: #666;
+      margin-bottom: 12px;
+    }
+
+    header h2 {
+      font-size: 22px;
+      font-weight: 700;
+      margin-bottom: 8px;
+    }
+
+    header .meta {
+      font-size: 13px;
+      color: #666;
+    }
+
+    section {
+      margin-bottom: 32px;
+    }
+
+    section h3 {
+      font-size: 16px;
+      font-weight: 700;
+      border-left: 4px solid #1a1a1a;
+      padding-left: 12px;
+      margin-bottom: 16px;
+    }
+
+    .chapter h4 {
+      font-size: 14px;
+      font-weight: 700;
+      margin-bottom: 4px;
+    }
+
+    .chapter .timestamp {
+      font-size: 12px;
+      color: #999;
+      font-weight: 400;
+    }
+
+    .chapter {
+      margin-bottom: 16px;
+    }
+
+    .transcript {
+      white-space: pre-wrap;
+      font-size: 13px;
+      background: #f5f5f5;
+      padding: 16px;
+      border-radius: 4px;
+      max-height: none;
+    }
+
+    .blog-content {
+      font-size: 14px;
+    }
+
+    .sns-section h4 {
+      font-size: 14px;
+      font-weight: 700;
+      margin: 16px 0 8px 0;
+    }
+
+    ul {
+      padding-left: 20px;
+    }
+
+    li {
+      margin-bottom: 8px;
+      font-size: 13px;
+    }
+
+    footer {
+      border-top: 1px solid #ddd;
+      padding-top: 16px;
+      text-align: center;
+      font-size: 12px;
+      color: #999;
+    }
+
+    @media print {
+      body { padding: 20px; }
+      .transcript { max-height: none; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Distill Report</h1>
+    <h2>${escapeHtml(meta.title)}</h2>
+    <div class="meta">
+      ${escapeHtml(meta.channel)} | ${escapeHtml(meta.duration)} | 生成日時: ${now}
+    </div>
+  </header>
+
+  <section>
+    <h3>要約</h3>
+    <p>${escapeHtml(summary.oneliner)}</p>
+  </section>
+
+  <section>
+    <h3>詳細要約</h3>
+    <p>${escapeHtml(summary.detailed)}</p>
+  </section>
+
+  ${
+    summary.chapters.length > 0
+      ? `<section>
+    <h3>章立て要約</h3>
+    ${chaptersHtml}
+  </section>`
+      : ""
+  }
+
+  <section>
+    <h3>全文文字起こし</h3>
+    <div class="transcript">${escapeHtml(transcript)}</div>
+  </section>
+
+  <section>
+    <h3>ブログ記事</h3>
+    <h4>${escapeHtml(blog.title)}</h4>
+    <div class="blog-content">${escapeHtml(blog.content)}</div>
+  </section>
+
+  <section class="sns-section">
+    <h3>SNS投稿</h3>
+
+    <h4>X (Twitter)</h4>
+    <ul>${twitterHtml}</ul>
+
+    <h4>Instagram</h4>
+    <p>${escapeHtml(sns.instagram)}</p>
+
+    <h4>LinkedIn</h4>
+    <p>${escapeHtml(sns.linkedin)}</p>
+  </section>
+
+  <footer>
+    <p>Generated by Distill</p>
+  </footer>
+</body>
+</html>`;
+}
+
+// ---------------------------------------------------------------------------
+// ユーティリティ
+// ---------------------------------------------------------------------------
+
+function escapeHtml(str: string): string {
+  return str
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}

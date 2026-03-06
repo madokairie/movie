@@ -126,13 +126,14 @@ export async function POST(request: NextRequest) {
         };
 
         // Persist to local history
+        let historyId: string | undefined;
         try {
-          await saveResult(url, result);
+          historyId = await saveResult(url, result);
         } catch {
           // Storage failure should not block the response
         }
 
-        send({ type: "complete", data: result });
+        send({ type: "complete", data: result, historyId });
         controller.close();
       } catch (error) {
         if (error instanceof DistillError) {

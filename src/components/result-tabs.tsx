@@ -18,6 +18,7 @@ export function ResultTabs({ result, url }: ResultTabsProps) {
   return (
     <Tabs defaultValue="transcript" className="w-full">
       <div className="flex items-center justify-between gap-4">
+        <div className="overflow-x-auto">
         <TabsList
           variant="line"
           className="h-auto gap-0 bg-transparent p-0"
@@ -25,33 +26,34 @@ export function ResultTabs({ result, url }: ResultTabsProps) {
         >
           <TabsTrigger
             value="transcript"
-            className="gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors duration-150 hover:text-foreground data-[state=active]:border-copper data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            className="whitespace-nowrap gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors duration-150 hover:text-foreground data-[state=active]:border-copper data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
             <FileText className="size-4" />
             全文
           </TabsTrigger>
           <TabsTrigger
             value="summary"
-            className="gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors duration-150 hover:text-foreground data-[state=active]:border-copper data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            className="whitespace-nowrap gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors duration-150 hover:text-foreground data-[state=active]:border-copper data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
             <ListTree className="size-4" />
             要約
           </TabsTrigger>
           <TabsTrigger
             value="blog"
-            className="gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors duration-150 hover:text-foreground data-[state=active]:border-copper data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            className="whitespace-nowrap gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors duration-150 hover:text-foreground data-[state=active]:border-copper data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
             <BookOpen className="size-4" />
             ブログ
           </TabsTrigger>
           <TabsTrigger
             value="sns"
-            className="gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors duration-150 hover:text-foreground data-[state=active]:border-copper data-[state=active]:text-foreground data-[state=active]:shadow-none"
+            className="whitespace-nowrap gap-1.5 rounded-none border-b-2 border-transparent px-4 py-2.5 text-sm font-medium text-text-secondary transition-colors duration-150 hover:text-foreground data-[state=active]:border-copper data-[state=active]:text-foreground data-[state=active]:shadow-none"
           >
             <Share2 className="size-4" />
             SNS
           </TabsTrigger>
         </TabsList>
+        </div>
 
         <PdfButton result={result} url={url} />
       </div>

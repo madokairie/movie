@@ -109,3 +109,30 @@ export async function getResultById(
   const entries = await readHistory();
   return entries.find((e) => e.id === id) ?? null;
 }
+
+/**
+ * Update the title of a history entry. Returns true if found and updated.
+ */
+/**
+ * Delete a history entry by id. Returns true if found and deleted.
+ */
+export async function deleteEntry(id: string): Promise<boolean> {
+  const entries = await readHistory();
+  const index = entries.findIndex((e) => e.id === id);
+  if (index === -1) return false;
+  entries.splice(index, 1);
+  await writeHistory(entries);
+  return true;
+}
+
+export async function updateTitle(
+  id: string,
+  newTitle: string,
+): Promise<boolean> {
+  const entries = await readHistory();
+  const entry = entries.find((e) => e.id === id);
+  if (!entry) return false;
+  entry.result.meta.title = newTitle;
+  await writeHistory(entries);
+  return true;
+}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect, useRef } from "react";
 import { Play, Loader2 } from "lucide-react";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -17,6 +18,9 @@ export function UrlInput({
   onSubmit,
   isProcessing,
 }: UrlInputProps) {
+  const inputRef = useRef<HTMLInputElement>(null);
+  useEffect(() => { inputRef.current?.focus(); }, []);
+
   return (
     <form
       onSubmit={(e) => {
@@ -26,6 +30,7 @@ export function UrlInput({
       className="flex gap-3"
     >
       <Input
+        ref={inputRef}
         type="url"
         value={url}
         onChange={(e) => onUrlChange(e.target.value)}
@@ -37,7 +42,7 @@ export function UrlInput({
       <Button
         type="submit"
         disabled={isProcessing || !url.trim()}
-        aria-label={isProcessing ? "処理中" : "蒸留を開始"}
+        aria-label={isProcessing ? "処理中" : "分析を開始"}
         className="h-12 rounded-md bg-copper px-6 text-sm font-medium text-white hover:bg-copper-hover disabled:opacity-50 transition-opacity duration-100"
       >
         {isProcessing ? (

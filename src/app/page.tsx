@@ -13,18 +13,11 @@ import type {
   ProcessStep,
 } from "@/types";
 
-type ProcessingState = {
-  status: "processing";
-  step: ProcessStep;
-  progress: number;
-  elapsed?: number;
-  estimate?: string;
-};
-
 export default function Home() {
   const [url, setUrl] = useState("");
   const [state, setState] = useState<AppState>({ status: "idle" });
   const [processingExtra, setProcessingExtra] = useState<{ elapsed?: number; estimate?: string }>({});
+  const [historyId, setHistoryId] = useState<string | undefined>();
 
   const handleDistill = useCallback(async () => {
     setState({ status: "processing", step: "extracting", progress: 0 });
@@ -79,6 +72,7 @@ export default function Home() {
               });
             } else if (event.type === "complete") {
               setState({ status: "complete", result: event.data as DistillResult });
+              if (event.historyId) setHistoryId(event.historyId as string);
             } else if (event.type === "error") {
               setState({
                 status: "error",
@@ -98,15 +92,17 @@ export default function Home() {
     }
   }, [url]);
 
-  const handleLoadFromHistory = useCallback((result: DistillResult) => {
+  const handleLoadFromHistory = useCallback((result: DistillResult, id?: string) => {
     setState({ status: "complete", result });
     setUrl("");
+    setHistoryId(id);
   }, []);
 
   const handleReset = useCallback(() => {
     setState({ status: "idle" });
     setUrl("");
     setProcessingExtra({});
+    setHistoryId(undefined);
   }, []);
 
   const isProcessing = state.status === "processing";
@@ -116,14 +112,18 @@ export default function Home() {
       {/* Header */}
       <header className="no-print border-b border-border">
         <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4 md:px-8">
-          <h1 className="font-serif text-2xl tracking-tight text-foreground">
+          <button
+            type="button"
+            onClick={state.status !== "idle" ? handleReset : undefined}
+            className={`font-serif text-2xl tracking-tight text-foreground ${state.status !== "idle" ? "cursor-pointer hover:text-copper transition-colors duration-150" : ""}`}
+          >
             Distill
-          </h1>
+          </button>
         </div>
       </header>
 
       {/* Main */}
-      <main className="mx-auto max-w-5xl space-y-12 px-4 py-12 md:px-8">
+      <main className="mx-auto max-w-5xl space-y-8 md:space-y-12 px-4 py-12 md:px-8">
         {/* URL Input */}
         <section className="no-print" aria-label="URL入力">
           <UrlInput
@@ -150,16 +150,31 @@ export default function Home() {
         {state.status === "error" && (
           <section
             aria-label="エラー"
-            className="flex items-center gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4"
+            className="flex items-center justify-between gap-3 rounded-lg border border-destructive/30 bg-destructive/5 p-4"
           >
-            <AlertCircle className="size-5 shrink-0 text-destructive" />
-            <p className="text-sm text-destructive">{state.message}</p>
+            <div className="flex items-center gap-3">
+              <AlertCircle className="size-5 shrink-0 text-destructive" />
+              <p className="text-sm text-destructive">{state.message}</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => {
+                if (url.trim()) {
+                  handleDistill();
+                } else {
+                  setState({ status: "idle" });
+                }
+              }}
+              className="shrink-0 rounded-md bg-surface px-3 py-1.5 text-sm text-foreground transition-colors duration-150 hover:bg-surface-elevated"
+            >
+              {url.trim() ? "再試行" : "戻る"}
+            </button>
           </section>
         )}
 
         {/* Results */}
         {state.status === "complete" && (
-          <div className="space-y-6">
+          <div className="animate-fade-in space-y-6">
             <button
               type="button"
               onClick={handleReset}
@@ -170,7 +185,21 @@ export default function Home() {
             </button>
 
             <section aria-label="動画情報">
-              <VideoMeta meta={state.result.meta} />
+              <VideoMeta
+                meta={state.result.meta}
+                historyId={historyId}
+                onTitleChange={(newTitle) => {
+                  if (state.status === "complete") {
+                    setState({
+                      ...state,
+                      result: {
+                        ...state.result,
+                        meta: { ...state.result.meta, title: newTitle },
+                      },
+                    });
+                  }
+                }}
+              />
             </section>
 
             <section aria-label="結果">

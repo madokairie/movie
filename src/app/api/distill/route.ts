@@ -122,6 +122,7 @@ export async function POST(request: NextRequest) {
           summary: generated.summary,
           blog: generated.blog,
           sns: generated.sns,
+          category: generated.category ?? "その他",
         };
 
         // Persist to local history

@@ -58,6 +58,7 @@ export interface DistillResult {
   summary: Summary;
   blog: Blog;
   sns: SnsContent;
+  category?: string;
 }
 
 // ---------------------------------------------------------------------------
@@ -119,6 +120,7 @@ export interface HistoryEntry {
   title: string;
   platform: string;
   duration: string;
+  category: string;
   createdAt: string;
 }
 

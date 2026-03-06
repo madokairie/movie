@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { Library, Clock, ExternalLink } from "lucide-react";
-import type { DistillResult } from "@/types";
+import { Library, Clock, ExternalLink, Tag } from "lucide-react";
+import type { DistillResult, HistoryEntry } from "@/types";
 
 // ---------------------------------------------------------------------------
 // Types
@@ -14,6 +14,7 @@ interface HistoryEntrySummary {
   title: string;
   platform: string;
   duration: string;
+  category: string;
   createdAt: string;
 }
 
@@ -69,6 +70,7 @@ function truncate(str: string, max: number): string {
 export function HistoryList({ onSelectResult }: HistoryListProps) {
   const [entries, setEntries] = useState<HistoryEntrySummary[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState<string>("すべて");
 
   useEffect(() => {
     let cancelled = false;
@@ -79,21 +81,17 @@ export function HistoryList({ onSelectResult }: HistoryListProps) {
         if (!res.ok) return;
         const data = (await res.json()) as HistoryEntrySummary[];
         if (!cancelled) {
-          setEntries(data.slice(0, 20));
+          setEntries(data.slice(0, 50));
         }
       } catch {
         // silently fail
       } finally {
-        if (!cancelled) {
-          setLoading(false);
-        }
+        if (!cancelled) setLoading(false);
       }
     }
 
     fetchHistory();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   async function handleSelect(entry: HistoryEntrySummary) {
@@ -107,8 +105,8 @@ export function HistoryList({ onSelectResult }: HistoryListProps) {
     }
   }
 
-  // Loading state
-  if (loading) {
+  // Loading / empty states
+  if (loading || entries.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center py-24 text-center">
         <p className="font-serif text-2xl text-foreground/70">
@@ -121,55 +119,78 @@ export function HistoryList({ onSelectResult }: HistoryListProps) {
     );
   }
 
-  // No history — show tagline
-  if (entries.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center py-24 text-center">
-        <p className="font-serif text-2xl text-foreground/70">
-          動画から、要点だけを取り出す
-        </p>
-        <p className="mt-3 text-sm text-text-secondary">
-          URLを貼るだけで文字起こし・要約・ブログ・SNS投稿を自動生成
-        </p>
-      </div>
-    );
-  }
+  // Extract unique categories
+  const categories = ["すべて", ...Array.from(new Set(entries.map((e) => e.category || "その他")))];
 
-  // History list
+  // Filter
+  const filtered = selectedCategory === "すべて"
+    ? entries
+    : entries.filter((e) => (e.category || "その他") === selectedCategory);
+
   return (
     <section aria-label="ライブラリ">
       {/* Header */}
-      <div className="mb-4 flex items-center gap-2">
-        <Library className="size-4 text-text-secondary" />
-        <h2 className="text-sm font-medium text-text-secondary">ライブラリ</h2>
-        <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-copper-muted px-1.5 text-xs font-medium text-copper">
-          {entries.length}
-        </span>
+      <div className="mb-5 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          <Library className="size-4 text-copper" />
+          <h2 className="text-base font-medium text-foreground">ライブラリ</h2>
+          <span className="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-copper/15 px-1.5 text-xs font-medium text-copper">
+            {entries.length}
+          </span>
+        </div>
+      </div>
+
+      {/* Category filter */}
+      <div className="mb-4 flex flex-wrap gap-2">
+        {categories.map((cat) => (
+          <button
+            key={cat}
+            type="button"
+            onClick={() => setSelectedCategory(cat)}
+            className={`inline-flex items-center gap-1 rounded-full px-3 py-1.5 text-xs font-medium transition-all duration-150 ${
+              selectedCategory === cat
+                ? "bg-copper text-white"
+                : "bg-surface text-text-secondary hover:bg-surface-elevated hover:text-foreground"
+            }`}
+          >
+            {cat !== "すべて" && <Tag className="size-3" />}
+            {cat}
+            {cat !== "すべて" && (
+              <span className="text-[10px] opacity-70">
+                {entries.filter((e) => (e.category || "その他") === cat).length}
+              </span>
+            )}
+          </button>
+        ))}
       </div>
 
       {/* Grid */}
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2">
-        {entries.map((entry) => {
-          const platformColor =
-            PLATFORM_COLORS[entry.platform] ?? "var(--text-muted)";
-          const platformLabel =
-            PLATFORM_LABELS[entry.platform] ?? entry.platform;
+        {filtered.map((entry) => {
+          const platformColor = PLATFORM_COLORS[entry.platform] ?? "var(--text-muted)";
+          const platformLabel = PLATFORM_LABELS[entry.platform] ?? entry.platform;
 
           return (
             <button
               key={entry.id}
               type="button"
               onClick={() => handleSelect(entry)}
-              className="group flex flex-col gap-2 rounded-lg border border-border bg-surface p-4 text-left transition-all duration-150 hover:border-copper/40 hover:bg-surface-elevated"
+              className="group flex flex-col gap-2.5 rounded-lg border border-border bg-surface p-4 text-left transition-all duration-150 hover:border-copper/40 hover:bg-surface-elevated"
             >
-              {/* Title */}
-              <p className="text-sm font-medium leading-snug text-foreground group-hover:text-foreground/90">
-                {truncate(entry.title, 60)}
-              </p>
+              {/* Title + Category */}
+              <div className="flex items-start justify-between gap-2">
+                <p className="text-sm font-medium leading-snug text-foreground group-hover:text-foreground/90">
+                  {truncate(entry.title, 60)}
+                </p>
+                {entry.category && entry.category !== "その他" && (
+                  <span className="shrink-0 rounded bg-copper/10 px-1.5 py-0.5 text-[10px] font-medium text-copper">
+                    {entry.category}
+                  </span>
+                )}
+              </div>
 
               {/* Meta row */}
               <div className="flex flex-wrap items-center gap-2">
-                {/* Platform badge */}
                 <span
                   className="inline-flex items-center rounded px-1.5 py-0.5 text-[11px] font-medium leading-none"
                   style={{
@@ -180,29 +201,33 @@ export function HistoryList({ onSelectResult }: HistoryListProps) {
                   {platformLabel}
                 </span>
 
-                {/* Duration */}
-                {entry.duration && (
-                  <span className="text-xs text-text-muted">
+                {entry.duration && entry.duration !== "不明" && (
+                  <span className="text-xs text-text-secondary">
                     {entry.duration}
                   </span>
                 )}
 
-                {/* Date */}
-                <span className="ml-auto flex items-center gap-1 text-xs text-text-muted">
+                <span className="ml-auto flex items-center gap-1 text-xs text-text-secondary">
                   <Clock className="size-3" />
                   {relativeTime(entry.createdAt)}
                 </span>
               </div>
 
               {/* URL */}
-              <p className="flex items-center gap-1 text-xs text-text-muted/70">
+              <p className="flex items-center gap-1 text-xs text-text-secondary/60">
                 <ExternalLink className="size-3 shrink-0" />
-                {truncate(entry.url, 50)}
+                {truncate(entry.url, 55)}
               </p>
             </button>
           );
         })}
       </div>
+
+      {filtered.length === 0 && (
+        <p className="py-8 text-center text-sm text-text-secondary">
+          このカテゴリにはまだデータがありません
+        </p>
+      )}
     </section>
   );
 }

@@ -21,6 +21,7 @@ export interface HistoryEntrySummary {
   title: string;
   platform: string;
   duration: string;
+  category: string;
   createdAt: string;
 }
 
@@ -94,6 +95,7 @@ export async function getHistory(): Promise<HistoryEntrySummary[]> {
     title: e.result.meta.title,
     platform: e.result.meta.platform,
     duration: e.result.meta.duration,
+    category: e.result.category ?? "その他",
     createdAt: e.createdAt,
   }));
 }

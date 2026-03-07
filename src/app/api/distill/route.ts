@@ -18,7 +18,7 @@ function sseEncode(data: unknown): string {
 // POST /api/distill
 // ---------------------------------------------------------------------------
 
-export const maxDuration = 600; // 10 minutes
+export const maxDuration = 3600; // 60 minutes
 
 export async function POST(request: NextRequest) {
   let body: DistillRequest;
@@ -46,14 +46,44 @@ export async function POST(request: NextRequest) {
       let audioPath: string | null = null;
       const startTime = Date.now();
 
+      // Keep-alive interval to prevent browser/proxy timeout
+      let keepAliveTimer: ReturnType<typeof setInterval> | null = null;
+
       function send(data: Record<string, unknown>) {
         const elapsed = Math.round((Date.now() - startTime) / 1000);
-        controller.enqueue(
-          encoder.encode(sseEncode({ ...data, elapsed })),
-        );
+        try {
+          controller.enqueue(
+            encoder.encode(sseEncode({ ...data, elapsed })),
+          );
+        } catch {
+          // Stream already closed
+        }
+      }
+
+      function startKeepAlive(step: string, baseProgress: number) {
+        stopKeepAlive();
+        keepAliveTimer = setInterval(() => {
+          const elapsed = Math.round((Date.now() - startTime) / 1000);
+          const minutes = Math.floor(elapsed / 60);
+          const seconds = elapsed % 60;
+          send({
+            type: "progress",
+            step,
+            progress: baseProgress,
+            message: `処理中... (${minutes}分${seconds}秒経過)`,
+          });
+        }, 10_000); // 10秒ごとにキープアライブ送信
+      }
+
+      function stopKeepAlive() {
+        if (keepAliveTimer) {
+          clearInterval(keepAliveTimer);
+          keepAliveTimer = null;
+        }
       }
 
       function sendError(code: string, message: string) {
+        stopKeepAlive();
         send({ type: "error", code, message });
         controller.close();
       }
@@ -68,7 +98,9 @@ export async function POST(request: NextRequest) {
           estimate: "動画の長さに応じて1〜10分",
         });
 
+        startKeepAlive("extracting", 10);
         const extraction = await extractAudio(url);
+        stopKeepAlive();
         audioPath = extraction.audioPath;
         const { meta } = extraction;
 
@@ -84,11 +116,13 @@ export async function POST(request: NextRequest) {
           type: "progress",
           step: "transcribing",
           progress: 35,
-          message: "文字起こし中...",
-          estimate: "長い動画は分割処理するため数分かかります",
+          message: "文字起こし中...（長尺動画は自動分割して並列処理します）",
+          estimate: "3時間の動画で約30〜40分",
         });
 
+        startKeepAlive("transcribing", 40);
         const transcript = await transcribe(audioPath);
+        stopKeepAlive();
 
         send({
           type: "progress",
@@ -103,10 +137,12 @@ export async function POST(request: NextRequest) {
           step: "generating",
           progress: 75,
           message: "コンテンツを生成中...",
-          estimate: "約30秒",
+          estimate: "約30秒〜1分",
         });
 
+        startKeepAlive("generating", 80);
         const generated = await generateContent(transcript, meta);
+        stopKeepAlive();
 
         send({
           type: "progress",
@@ -144,6 +180,7 @@ export async function POST(request: NextRequest) {
           sendError("EXTRACTION_FAILED", message);
         }
       } finally {
+        stopKeepAlive();
         if (audioPath) {
           await cleanup(audioPath);
         }

@@ -25,7 +25,7 @@ export async function getVideoMeta(url: string): Promise<VideoMeta> {
     "--no-download",
     "--no-warnings",
     url,
-  ]);
+  ], { maxBuffer: 50 * 1024 * 1024, timeout: 120_000 });
 
   const info = JSON.parse(stdout) as {
     title?: string;
@@ -67,7 +67,7 @@ export async function extractAudio(
     outputPath,
     "--no-warnings",
     url,
-  ]);
+  ], { maxBuffer: 50 * 1024 * 1024, timeout: 30 * 60 * 1000 });
 
   return outputPath;
 }

@@ -107,7 +107,7 @@ export async function extractAudio(
     "1",
     "-y",
     outputPath,
-  ]);
+  ], { maxBuffer: 50 * 1024 * 1024, timeout: 60 * 60 * 1000 });
 
   return outputPath;
 }

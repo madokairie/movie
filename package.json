@@ -3,8 +3,8 @@
   "version": "0.1.0",
   "private": true,
   "scripts": {
-    "dev": "NODE_OPTIONS='--max-old-space-size=4096' next dev",
-    "dev:safe": "bash scripts/dev.sh",
+    "dev": "bash scripts/dev.sh",
+    "dev:quick": "NODE_OPTIONS='--max-old-space-size=4096' next dev -p 3200",
     "build": "next build",
     "start": "next start",
     "lint": "eslint"
